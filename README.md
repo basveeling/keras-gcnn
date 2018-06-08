@@ -1,5 +1,7 @@
 # Group-Equivariant Convolutional Neural networks for Keras: keras_gcnn
 Straight-forward keras implementations for 90-degree roto-reflections equivariant CNNs. See a [working example](https://github.com/basveeling/keras-gcnn/blob/master/examples/g_densnet_cifar.py).
+
+Install: `pip install -e git+git@github.com:basveeling/keras-gcnn.git#egg=keras_gcnn`
 ## About Group-equivariance
 Conventional fully-convolutional NNs are 'equivariant' to translation: as the input shifts in the spatial plane, the output shifts accordingly. This can be extended to include other forms of transformations such as 90 degree rotations and reflection. This is formalized by [2].
 
@@ -21,6 +23,6 @@ We provide a Group-equivariant version of DenseNet [3] as proposed in [1].
 - To create a model invariant to rotations, use GroupPool followed by a global spatial pooling layer such as GlobalAveragePooling.
 
 ## References
-- [1] TODO ARxiv
+- [1] TODO ARxiv reference
 - [2] Cohen, Taco, and Max Welling. "Group equivariant convolutional networks." International Conference on Machine Learning. 2016.
 - [3] Huang, Gao, et al. "Densely connected convolutional networks." Proceedings of the IEEE conference on computer vision and pattern recognition. Vol. 1. No. 2. 2017.
