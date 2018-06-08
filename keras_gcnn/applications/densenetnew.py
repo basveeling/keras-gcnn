@@ -15,7 +15,6 @@ from __future__ import division
 from __future__ import print_function
 
 import keras.backend as K
-from coach.custom import MCDropout
 from keras.applications.imagenet_utils import _obtain_input_shape
 from keras.applications.imagenet_utils import preprocess_input as _preprocess_input
 from keras.engine.topology import get_source_inputs
@@ -488,7 +487,7 @@ def __conv_block(ip, nb_filter, mc_dropout, padding, bn_momentum, use_g_bn, bloc
                      depth_multiplier=depth_multiplier)(x)
         if dropout_rate:
             if mc_dropout:
-                x = MCDropout(dropout_rate)(x)
+                x = Dropout(dropout_rate)(x, training=True)
             else:
                 x = Dropout(dropout_rate)(x)
 
