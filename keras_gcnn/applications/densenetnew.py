@@ -35,9 +35,22 @@ from keras.layers import concatenate
 from keras.models import Model
 from keras.regularizers import l2
 from keras_contrib.layers.convolutional import SubPixelUpscaling
+
 from keras_gcnn.layers import GConv2D, GBatchNorm
 from keras_gcnn.layers.pooling import GroupPool
-from pathology.nn_utils import crop_to_fit
+
+
+def crop_to_fit(main, to_crop):
+    from keras.layers import Cropping2D
+    import keras.backend as K
+    cropped_skip = to_crop
+    skip_size = K.int_shape(cropped_skip)[1]
+    out_size = K.int_shape(main)[1]
+    if skip_size > out_size:
+        size_diff = (skip_size - out_size) // 2
+        size_diff_odd = ((skip_size - out_size) // 2) + ((skip_size - out_size) % 2)
+        cropped_skip = Cropping2D(((size_diff, size_diff_odd),) * 2)(cropped_skip)
+    return cropped_skip
 
 
 def __BatchNorm(use_g_bn, conv_group, use_gcnn, axis=-1, momentum=0.99, epsilon=1e-3, center=True, scale=True,
