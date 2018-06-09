@@ -36,11 +36,9 @@ def test_functional_model_saving():
     use_gcnn = True
 
     # Create the model (without loading weights)
-    model = GDenseNet(mc_dropout=False, padding='same', depth=depth, nb_dense_block=nb_dense_block,
-                      growth_rate=growth_rate, nb_filter=nb_filter,
-                      dropout_rate=dropout_rate,
-                      input_shape=img_dim,
-                      weights=None, use_gcnn=use_gcnn, conv_group=conv_group)
+    model = GDenseNet(mc_dropout=False, padding='same', nb_dense_block=nb_dense_block, growth_rate=growth_rate,
+                      nb_filter=nb_filter, dropout_rate=dropout_rate, weights=None, input_shape=img_dim, depth=depth,
+                      use_gcnn=use_gcnn, conv_group=conv_group)
     model.compile(loss=losses.categorical_crossentropy,
                   optimizer=optimizers.Adam(),
                   metrics=[metrics.categorical_accuracy])

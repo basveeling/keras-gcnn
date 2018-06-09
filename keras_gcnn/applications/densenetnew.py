@@ -53,10 +53,10 @@ def crop_to_fit(main, to_crop):
     return cropped_skip
 
 
-def __BatchNorm(use_g_bn, conv_group, use_gcnn, axis=-1, momentum=0.99, epsilon=1e-3, center=True, scale=True,
+def __BatchNorm(use_g_bn, conv_group, use_gcnn, momentum=0.99, epsilon=1e-3, center=True, scale=True,
                 beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros',
                 moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, beta_constraint=None,
-                gamma_constraint=None, **kwargs):
+                gamma_constraint=None, axis=-1, **kwargs):
     """Utility function to get batchnorm operation.
 
     # Arguments
@@ -192,7 +192,7 @@ def GDenseNet(mc_dropout, padding, nb_dense_block=3, growth_rate=12, nb_filter=-
               bottleneck=False, reduction=0.0, dropout_rate=0.0, weight_decay=1e-4, subsample_initial_block=False,
               include_top=True, weights=None, input_tensor=None, pooling=None, classes=10, activation='softmax',
               input_shape=None, depth=40, bn_momentum=0.99, use_gcnn=False, conv_group=None, depth_multiplier=1,
-              use_g_bn=True, kernel_size=3):
+              use_g_bn=True, kernel_size=3, mc_bn=None):
     '''Instantiate the DenseNet architecture.
 
     The model and the weights are compatible with both
@@ -259,6 +259,7 @@ def GDenseNet(mc_dropout, padding, nb_dense_block=3, growth_rate=12, nb_filter=-
     # Raises
         ValueError: in case of invalid argument for `weights`,
             or invalid input shape.
+            :param mc_bn:
             :param bn_momentum:
             :param padding:
             :param mc_dropout:
@@ -294,11 +295,11 @@ def GDenseNet(mc_dropout, padding, nb_dense_block=3, growth_rate=12, nb_filter=-
         else:
             img_input = input_tensor
 
-    x = __create_dense_net(classes, img_input, include_top, mc_dropout, padding, bn_momentum, use_g_bn, nb_filter,
+    x = __create_dense_net(classes, img_input, include_top, mc_dropout, padding, bn_momentum, use_g_bn, mc_bn,
                            nb_layers_per_block, bottleneck, reduction, dropout_rate, weight_decay,
                            subsample_initial_block, pooling, activation, depth, nb_dense_block, growth_rate,
                            use_gcnn=use_gcnn, conv_group=conv_group, depth_multiplier=depth_multiplier,
-                           kernel_size=kernel_size)
+                           kernel_size=kernel_size, nb_filter=nb_filter)
 
     # Ensure that the model takes into account
     # any potential predecessors of `input_tensor`.
@@ -312,11 +313,10 @@ def GDenseNet(mc_dropout, padding, nb_dense_block=3, growth_rate=12, nb_filter=-
     return model
 
 
-def GDenseNetFCN(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_per_block=4,
-                 reduction=0.0, dropout_rate=0.0, weight_decay=1E-4, init_conv_filters=48,
-                 include_top=True, weights=None, input_tensor=None, classes=1, activation='softmax',
-                 upsampling_conv=128, upsampling_type='deconv', mc_dropout=False, padding='same', bn_momentum=0.99,
-                 use_g_bn=True, use_gcnn=False, conv_group=None):
+def GDenseNetFCN(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_per_block=4, reduction=0.0, dropout_rate=0.0,
+                 weight_decay=1E-4, init_conv_filters=48, include_top=True, weights=None, input_tensor=None, classes=1,
+                 activation='softmax', upsampling_conv=128, upsampling_type='deconv', mc_dropout=False, padding='same',
+                 bn_momentum=0.99, use_g_bn=True, use_gcnn=False, conv_group=None, mc_bn=None):
     '''Instantiate the DenseNet FCN architecture.
         Note that when using TensorFlow,
         for best performance you should set
@@ -362,6 +362,7 @@ def GDenseNetFCN(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_per_bl
                 output shape of deconvolution layers automatically.
         # Returns
             A Keras model instance.
+            :param mc_bn:
     '''
 
     if weights not in {None}:
@@ -418,11 +419,10 @@ def GDenseNetFCN(input_shape, nb_dense_block=5, growth_rate=16, nb_layers_per_bl
         else:
             img_input = input_tensor
 
-    x = __create_fcn_dense_net(classes, img_input, include_top, mc_dropout, padding, bn_momentum, use_g_bn,
-                               nb_dense_block,
-                               growth_rate, reduction, dropout_rate, weight_decay,
-                               nb_layers_per_block, upsampling_conv, upsampling_type,
-                               init_conv_filters, input_shape, activation, conv_group, use_gcnn)
+    x = __create_fcn_dense_net(classes, img_input, include_top, mc_dropout, padding, bn_momentum, use_g_bn, mc_bn,
+                               growth_rate, reduction, dropout_rate, weight_decay, nb_layers_per_block, upsampling_conv,
+                               upsampling_type, init_conv_filters, input_shape, activation, conv_group, use_gcnn,
+                               nb_dense_block)
 
     # Ensure that the model takes into account
     # any potential predecessors of `input_tensor`.
@@ -440,9 +440,9 @@ def name_or_none(prefix, name):
     return prefix + name if (prefix is not None and name is not None) else None
 
 
-def __conv_block(ip, nb_filter, mc_dropout, padding, bn_momentum, use_g_bn, block_prefix=None, bottleneck=False,
-                 dropout_rate=None, weight_decay=1e-4, use_gcnn=None, conv_group=None, depth_multiplier=1,
-                 kernel_size=3):
+def __conv_block(ip, nb_filter, mc_dropout, padding, bn_momentum, use_g_bn, mc_bn, bottleneck=False, dropout_rate=None,
+                 weight_decay=1e-4, use_gcnn=None, conv_group=None, depth_multiplier=1, kernel_size=3,
+                 block_prefix=None):
     '''
     Adds a convolution layer (with batch normalization and relu),
     and optionally a bottleneck layer.
@@ -471,6 +471,7 @@ def __conv_block(ip, nb_filter, mc_dropout, padding, bn_momentum, use_g_bn, bloc
 
     # Returns
         output tensor of block
+        :param mc_bn:
         :param use_g_bn:
         :param bn_momentum:
         :param padding:
@@ -479,9 +480,8 @@ def __conv_block(ip, nb_filter, mc_dropout, padding, bn_momentum, use_g_bn, bloc
     with K.name_scope('ConvBlock'):
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
-        x = __BatchNorm(use_g_bn, conv_group, use_gcnn, axis=concat_axis, epsilon=1.1e-5,
-                        name=name_or_none(block_prefix, '_bn'),
-                        momentum=bn_momentum)(ip)
+        x = __BatchNorm(use_g_bn, conv_group, use_gcnn, momentum=bn_momentum, epsilon=1.1e-5, axis=concat_axis,
+                        name=name_or_none(block_prefix, '_bn'))(ip, training=mc_bn)
         x = Activation('relu')(x)
 
         if bottleneck:
@@ -490,8 +490,8 @@ def __conv_block(ip, nb_filter, mc_dropout, padding, bn_momentum, use_g_bn, bloc
             x = __Conv2D(inter_channel, (1, 1), kernel_initializer='he_normal', padding=padding, use_bias=False,
                          kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_bottleneck_conv2D'),
                          use_gcnn=use_gcnn, conv_group=conv_group, depth_multiplier=depth_multiplier)(x)
-            x = __BatchNorm(use_g_bn, conv_group, use_gcnn, axis=concat_axis, epsilon=1.1e-5,
-                            name=name_or_none(block_prefix, '_bottleneck_bn'), momentum=bn_momentum)(x)
+            x = __BatchNorm(use_g_bn, conv_group, use_gcnn, momentum=bn_momentum, epsilon=1.1e-5, axis=concat_axis,
+                            name=name_or_none(block_prefix, '_bottleneck_bn'))(x, training=mc_bn)
             x = Activation('relu')(x)
 
         x = __Conv2D(nb_filter, (kernel_size, kernel_size), kernel_initializer='he_normal', padding=padding,
@@ -507,10 +507,9 @@ def __conv_block(ip, nb_filter, mc_dropout, padding, bn_momentum, use_g_bn, bloc
     return x
 
 
-def __dense_block(x, nb_layers, nb_filter, padding, mc_dropout, bn_momentum, growth_rate, use_g_bn,
-                  grow_nb_filters=True, return_concat_list=False, block_prefix=None, bottleneck=False,
-                  dropout_rate=None, weight_decay=1e-4, use_gcnn=None, conv_group=None, depth_multiplier=1,
-                  kernel_size=3):
+def __dense_block(x, nb_layers, nb_filter, padding, mc_dropout, bn_momentum, growth_rate, use_g_bn, mc_bn,
+                  return_concat_list=False, block_prefix=None, bottleneck=False, dropout_rate=None, weight_decay=1e-4,
+                  use_gcnn=None, conv_group=None, depth_multiplier=1, kernel_size=3, grow_nb_filters=True):
     '''
     Build a dense_block where the output of each conv_block is fed
     to subsequent ones
@@ -537,6 +536,7 @@ def __dense_block(x, nb_layers, nb_filter, padding, mc_dropout, bn_momentum, gro
 
         If return_concat_list is False, returns a list of the output
         keras tensor and the number of filters
+        :param mc_bn:
         :param use_g_bn:
         :param bn_momentum:
         :param padding:
@@ -548,10 +548,10 @@ def __dense_block(x, nb_layers, nb_filter, padding, mc_dropout, bn_momentum, gro
         x_list = [x]
 
         for i in range(nb_layers):
-            cb = __conv_block(x, growth_rate, mc_dropout, padding, bn_momentum, use_g_bn,
-                              block_prefix=name_or_none(block_prefix, '_%i' % i), bottleneck=bottleneck,
+            cb = __conv_block(x, growth_rate, mc_dropout, padding, bn_momentum, use_g_bn, mc_bn, bottleneck=bottleneck,
                               dropout_rate=dropout_rate, weight_decay=weight_decay, use_gcnn=use_gcnn,
-                              conv_group=conv_group, depth_multiplier=depth_multiplier, kernel_size=kernel_size)
+                              conv_group=conv_group, depth_multiplier=depth_multiplier, kernel_size=kernel_size,
+                              block_prefix=name_or_none(block_prefix, '_%i' % i))
             x_list.append(cb)
 
             x = concatenate([crop_to_fit(cb, x), cb], axis=concat_axis)
@@ -565,7 +565,7 @@ def __dense_block(x, nb_layers, nb_filter, padding, mc_dropout, bn_momentum, gro
             return x, nb_filter
 
 
-def __transition_block(ip, nb_filter, padding, bn_momentum, use_g_bn, block_prefix=None, compression=1.0,
+def __transition_block(ip, nb_filter, padding, bn_momentum, use_g_bn, mc_bn, block_prefix=None, compression=1.0,
                        weight_decay=1e-4, use_gcnn=None, conv_group=None, depth_multiplier=1):
     '''
     Adds a pointwise convolution layer (with batch normalization and relu),
@@ -597,6 +597,7 @@ def __transition_block(ip, nb_filter, padding, bn_momentum, use_g_bn, block_pref
 
     # Returns
         a keras tensor
+        :param mc_bn:
         :param use_g_bn:
         :param bn_momentum:
         :param padding:
@@ -604,9 +605,8 @@ def __transition_block(ip, nb_filter, padding, bn_momentum, use_g_bn, block_pref
     with K.name_scope('Transition'):
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
-        x = __BatchNorm(use_g_bn, conv_group, use_gcnn, axis=concat_axis, epsilon=1.1e-5,
-                        name=name_or_none(block_prefix, '_bn'),
-                        momentum=bn_momentum)(ip)
+        x = __BatchNorm(use_g_bn, conv_group, use_gcnn, momentum=bn_momentum, epsilon=1.1e-5, axis=concat_axis,
+                        name=name_or_none(block_prefix, '_bn'))(ip, training=mc_bn)
         x = Activation('relu')(x)
         x = __Conv2D(int(nb_filter * compression), (1, 1), kernel_initializer='he_normal', padding=padding,
                      use_bias=False, kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_conv2D'),
@@ -660,10 +660,11 @@ def __transition_up_block(ip, nb_filters, type='deconv', weight_decay=1E-4, bloc
         return x
 
 
-def __create_dense_net(nb_classes, img_input, include_top, mc_dropout, padding, bn_momentum, use_g_bn, nb_filter=-1,
+def __create_dense_net(nb_classes, img_input, include_top, mc_dropout, padding, bn_momentum, use_g_bn, mc_bn,
                        nb_layers_per_block=-1, bottleneck=False, reduction=0.0, dropout_rate=None, weight_decay=1e-4,
                        subsample_initial_block=False, pooling=None, activation='softmax', depth=40, nb_dense_block=3,
-                       growth_rate=12, use_gcnn=False, conv_group=None, depth_multiplier=1, kernel_size=3):
+                       growth_rate=12, use_gcnn=False, conv_group=None, depth_multiplier=1, kernel_size=3,
+                       nb_filter=-1):
     ''' Build the DenseNet model
 
     # Arguments
@@ -709,6 +710,7 @@ def __create_dense_net(nb_classes, img_input, include_top, mc_dropout, padding, 
     # Raises
         ValueError: in case of invalid argument for `reduction`
             or `nb_dense_block`
+            :param mc_bn:
             :param use_g_bn:
             :param bn_momentum:
             :param padding:
@@ -779,33 +781,33 @@ def __create_dense_net(nb_classes, img_input, include_top, mc_dropout, padding, 
                        strides=initial_strides, use_bias=False, kernel_regularizer=l2(weight_decay))(img_input)
 
         if subsample_initial_block:
-            x = __BatchNorm(use_g_bn, conv_group, use_gcnn, axis=concat_axis, epsilon=1.1e-5, name='initial_bn',
-                            momentum=bn_momentum)(x)
+            x = __BatchNorm(use_g_bn, conv_group, use_gcnn, momentum=bn_momentum, epsilon=1.1e-5, axis=concat_axis,
+                            name='initial_bn')(x, training=mc_bn)
             x = Activation('relu')(x)
             x = MaxPooling2D((3, 3), strides=(2, 2), padding=padding)(x)
 
         # Add dense blocks
         for block_idx in range(nb_dense_block - 1):
             x, nb_filter = __dense_block(x, nb_layers[block_idx], nb_filter, padding, mc_dropout, bn_momentum,
-                                         growth_rate, use_g_bn, block_prefix='dense_%i' % block_idx,
+                                         growth_rate, use_g_bn, mc_bn, block_prefix='dense_%i' % block_idx,
                                          bottleneck=bottleneck, dropout_rate=dropout_rate, weight_decay=weight_decay,
                                          use_gcnn=use_gcnn, conv_group=conv_group, depth_multiplier=depth_multiplier,
                                          kernel_size=kernel_size)
             # add transition_block
-            x = __transition_block(x, nb_filter, padding, bn_momentum, use_g_bn, block_prefix='tr_%i' % block_idx,
-                                   compression=compression, weight_decay=weight_decay, use_gcnn=use_gcnn,
-                                   conv_group=conv_group, depth_multiplier=depth_multiplier)
+            x = __transition_block(x, nb_filter, padding, bn_momentum, use_g_bn, mc_bn,
+                                   block_prefix='tr_%i' % block_idx, compression=compression, weight_decay=weight_decay,
+                                   use_gcnn=use_gcnn, conv_group=conv_group, depth_multiplier=depth_multiplier)
             nb_filter = int(nb_filter * compression)
 
         # The last dense_block does not have a transition_block
         x, nb_filter = __dense_block(x, final_nb_layer, nb_filter, padding, mc_dropout, bn_momentum, growth_rate,
-                                     use_g_bn, block_prefix='dense_%i' % (nb_dense_block - 1), bottleneck=bottleneck,
-                                     dropout_rate=dropout_rate, weight_decay=weight_decay, use_gcnn=use_gcnn,
-                                     conv_group=conv_group, depth_multiplier=depth_multiplier, kernel_size=kernel_size)
+                                     use_g_bn, mc_bn, block_prefix='dense_%i' % (nb_dense_block - 1),
+                                     bottleneck=bottleneck, dropout_rate=dropout_rate, weight_decay=weight_decay,
+                                     use_gcnn=use_gcnn, conv_group=conv_group, depth_multiplier=depth_multiplier,
+                                     kernel_size=kernel_size)
 
-        x = __BatchNorm(use_g_bn, conv_group, use_gcnn, axis=concat_axis, epsilon=1.1e-5, name='final_bn',
-                        momentum=bn_momentum)(
-            x)
+        x = __BatchNorm(use_g_bn, conv_group, use_gcnn, momentum=bn_momentum, epsilon=1.1e-5, axis=concat_axis,
+                        name='final_bn')(x, training=mc_bn)
         x = Activation('relu')(x)
 
         if include_top:
@@ -822,12 +824,10 @@ def __create_dense_net(nb_classes, img_input, include_top, mc_dropout, padding, 
         return x
 
 
-def __create_fcn_dense_net(nb_classes, img_input, include_top, mc_dropout, padding, bn_momentum, use_g_bn,
-                           nb_dense_block=5, growth_rate=12,
-                           reduction=0.0, dropout_rate=None, weight_decay=1e-4,
-                           nb_layers_per_block=4, nb_upsampling_conv=128, upsampling_type='upsampling',
-                           init_conv_filters=48, input_shape=None, activation='deconv', conv_group=None,
-                           use_gcnn=False):
+def __create_fcn_dense_net(nb_classes, img_input, include_top, mc_dropout, padding, bn_momentum, use_g_bn, mc_bn,
+                           growth_rate=12, reduction=0.0, dropout_rate=None, weight_decay=1e-4, nb_layers_per_block=4,
+                           nb_upsampling_conv=128, upsampling_type='upsampling', init_conv_filters=48, input_shape=None,
+                           activation='deconv', conv_group=None, use_gcnn=False, nb_dense_block=5):
     ''' Build the DenseNet-FCN model
 
     # Arguments
@@ -857,6 +857,7 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, mc_dropout, paddi
     # Raises
         ValueError: in case of invalid argument for `reduction`,
             `nb_dense_block` or `nb_upsampling_conv`.
+            :param mc_bn:
     '''
     with K.name_scope('DenseNetFCN'):
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
@@ -897,7 +898,8 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, mc_dropout, paddi
         # Initial convolution
         x = Conv2D(init_conv_filters, (7, 7), kernel_initializer='he_normal', padding='valid', name='initial_conv2D',
                    use_bias=False, kernel_regularizer=l2(weight_decay))(img_input)
-        x = __BatchNorm(use_g_bn, conv_group, use_gcnn, axis=concat_axis, epsilon=1.1e-5, name='initial_bn')(x)
+        x = __BatchNorm(use_g_bn, conv_group, use_gcnn, epsilon=1.1e-5, axis=concat_axis, name='initial_bn')(x,
+                                                                                                             training=mc_bn)
         x = Activation('relu')(x)
 
         nb_filter = init_conv_filters
@@ -907,22 +909,22 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, mc_dropout, paddi
         # Add dense blocks and transition down block
         for block_idx in range(nb_dense_block):
             x, nb_filter = __dense_block(x, nb_layers[block_idx], nb_filter, padding, mc_dropout, bn_momentum,
-                                         growth_rate, use_g_bn, block_prefix='dense_%i' % block_idx,
+                                         growth_rate, use_g_bn, mc_bn, block_prefix='dense_%i' % block_idx,
                                          dropout_rate=dropout_rate, weight_decay=weight_decay)
 
             # Skip connection
             skip_list.append(x)
 
             # add transition_block
-            x = __transition_block(x, nb_filter, padding, bn_momentum, use_g_bn, block_prefix='tr_%i' % block_idx,
-                                   compression=compression, weight_decay=weight_decay)
+            x = __transition_block(x, nb_filter, padding, bn_momentum, use_g_bn, mc_bn,
+                                   block_prefix='tr_%i' % block_idx, compression=compression, weight_decay=weight_decay)
 
             nb_filter = int(nb_filter * compression)  # this is calculated inside transition_down_block
 
         # The last dense_block does not have a transition_down_block
         # return the concatenated feature maps without the concatenation of the input
         _, nb_filter, concat_list = __dense_block(x, bottleneck_nb_layers, nb_filter, padding, mc_dropout, bn_momentum,
-                                                  growth_rate, use_g_bn, return_concat_list=True,
+                                                  growth_rate, use_g_bn, mc_bn, return_concat_list=True,
                                                   block_prefix='dense_%i' % nb_dense_block, dropout_rate=dropout_rate,
                                                   weight_decay=weight_decay)
 
@@ -946,10 +948,10 @@ def __create_fcn_dense_net(nb_classes, img_input, include_top, mc_dropout, paddi
             x_up, nb_filter, concat_list = __dense_block(x, nb_layers[nb_dense_block + block_idx + 1],
                                                          nb_filter=growth_rate, padding=padding, mc_dropout=mc_dropout,
                                                          bn_momentum=bn_momentum, growth_rate=growth_rate,
-                                                         use_g_bn=use_g_bn, grow_nb_filters=False,
-                                                         return_concat_list=True,
+                                                         use_g_bn=use_g_bn, mc_bn=mc_bn, return_concat_list=True,
                                                          block_prefix='dense_%i' % (nb_dense_block + 1 + block_idx),
-                                                         dropout_rate=dropout_rate, weight_decay=weight_decay)
+                                                         dropout_rate=dropout_rate, weight_decay=weight_decay,
+                                                         grow_nb_filters=False)
 
         if include_top:
             x = Conv2D(nb_classes, (1, 1), activation='linear', padding='valid', use_bias=False)(x_up)

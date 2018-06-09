@@ -11,6 +11,7 @@ If you use these implementations in your work, we appreciate a citation to our p
 Bibtex: TODO
 
 ## GDensenet
+![GDensenet](https://github.com/basveeling/keras-gcnn/blob/master/model.png)
 We provide a Group-equivariant version of DenseNet [3] as proposed in [1].
 
 ## Recipe for building equivariant networks:
