@@ -7,8 +7,22 @@ Conventional fully-convolutional NNs are 'equivariant' to translation: as the in
 
 ## Citing
 If you use these implementations in your work, we appreciate a citation to our paper:
-- TODO: put online.
-Bibtex: TODO
+
+**[1] B. S. Veeling, J. Linmans, J. Winkens, T. Cohen, M. Welling. "Rotation Equivariant CNNs for Digital Pathology". [arXiv:1806.03962](http://arxiv.org/abs/1806.03962)**
+
+Biblatex entry:
+```latex
+@ARTICLE{Veeling2018-qh,
+  title         = "Rotation Equivariant {CNNs} for Digital Pathology",
+  author        = "Veeling, Bastiaan S and Linmans, Jasper and Winkens, Jim and
+                   Cohen, Taco and Welling, Max",
+  month         =  jun,
+  year          =  2018,
+  archivePrefix = "arXiv",
+  primaryClass  = "cs.CV",
+  eprint        = "1806.03962"
+}
+```
 
 ## GDensenet
 ![GDensenet](https://github.com/basveeling/keras-gcnn/blob/master/model.png)
