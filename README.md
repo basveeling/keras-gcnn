@@ -24,6 +24,6 @@ We provide a Group-equivariant version of DenseNet [3] as proposed in [1].
 - To create a model invariant to rotations, use GroupPool followed by a global spatial pooling layer such as GlobalAveragePooling.
 
 ## References
-- [1] TODO ARxiv reference
+- [1] B. S. Veeling, J. Linmans, J. Winkens, T. Cohen, M. Welling. "Rotation Equivariant CNNs for Digital Pathology". arXiv [cs.CV] (2018), (available at http://arxiv.org/abs/1806.03962).
 - [2] Cohen, Taco, and Max Welling. "Group equivariant convolutional networks." International Conference on Machine Learning. 2016.
 - [3] Huang, Gao, et al. "Densely connected convolutional networks." Proceedings of the IEEE conference on computer vision and pattern recognition. Vol. 1. No. 2. 2017.

@@ -2,13 +2,12 @@
 '''Group-Equivariant DenseNet for Keras.
 
 # Reference
+- [Rotation Equivariant CNNs for Digital Pathology](http://arxiv.org/abs/1806.03962).
 - [Densely Connected Convolutional Networks](https://arxiv.org/pdf/1608.06993.pdf)
-- []
 
 This implementation is based on the following reference code:
  - https://github.com/gpleiss/efficient_densenet_pytorch
  - https://github.com/liuzhuang13/DenseNet
-
 '''
 from __future__ import absolute_import
 from __future__ import division
@@ -480,8 +479,9 @@ def __conv_block(ip, nb_filter, mc_dropout, padding, bn_momentum, use_g_bn, mc_b
     with K.name_scope('ConvBlock'):
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
+        x = ip
         x = __BatchNorm(use_g_bn, conv_group, use_gcnn, momentum=bn_momentum, epsilon=1.1e-5, axis=concat_axis,
-                        name=name_or_none(block_prefix, '_bn'))(ip, training=mc_bn)
+                        name=name_or_none(block_prefix, '_bn'))(x, training=mc_bn)
         x = Activation('relu')(x)
 
         if bottleneck:
@@ -605,8 +605,9 @@ def __transition_block(ip, nb_filter, padding, bn_momentum, use_g_bn, mc_bn, blo
     with K.name_scope('Transition'):
         concat_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
+        x = ip
         x = __BatchNorm(use_g_bn, conv_group, use_gcnn, momentum=bn_momentum, epsilon=1.1e-5, axis=concat_axis,
-                        name=name_or_none(block_prefix, '_bn'))(ip, training=mc_bn)
+                        name=name_or_none(block_prefix, '_bn'))(x, training=mc_bn)
         x = Activation('relu')(x)
         x = __Conv2D(int(nb_filter * compression), (1, 1), kernel_initializer='he_normal', padding=padding,
                      use_bias=False, kernel_regularizer=l2(weight_decay), name=name_or_none(block_prefix, '_conv2D'),

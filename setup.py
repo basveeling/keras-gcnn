@@ -9,7 +9,7 @@ setup(name='keras_gcnn',
       url='https://github.com/basveeling/keras-gcnn',
       install_requires=['GrouPy'],
       dependency_links=[
-          'git+https://github.com/tscohen/GrouPy.git#egg=GrouPy'
+          'git+https://github.com/nom/GrouPy#egg=GrouPy' # tscohen/GrouPy misses D4->Z2 code.
       ],
       extras_require={
           'tests': ['pytest',
