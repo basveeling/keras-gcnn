@@ -2,6 +2,10 @@
 Straight-forward keras implementations for 90-degree roto-reflections equivariant CNNs. See a [working example](https://github.com/basveeling/keras-gcnn/blob/master/examples/g_densnet_cifar.py).
 
 Install: `pip install git+https://github.com/nom/GrouPy#egg=GrouPy -e git+https://github.com/basveeling/keras-gcnn.git#egg=keras_gcnn`
+
+Requires python 3, up to date keras and a tensorflow backend.
+Please report any problems in the issues.
+
 ## About Group-equivariance
 Conventional fully-convolutional NNs are 'equivariant' to translation: as the input shifts in the spatial plane, the output shifts accordingly. This can be extended to include other forms of transformations such as 90 degree rotations and reflection. This is formalized by [2].
 
