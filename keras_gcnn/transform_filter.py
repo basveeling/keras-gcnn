@@ -1,4 +1,5 @@
 import keras.backend as K
+import tensorflow as tf
 
 
 def transform_filter_2d_nhwc(w, flat_indices, shape_info, validate_indices=True):
@@ -26,13 +27,13 @@ def transform_filter_2d_nhwc(w, flat_indices, shape_info, validate_indices=True)
     # The indexing is done using tf.gather. This function can only do integer indexing along the first axis.
     # We want to index the spatial and transformation axes of our filter, so we must flatten them into one axis.
     no, nto, ni, nti, n = shape_info
-    w_flat = K.reshape(w, [n * n * nti, ni, no])  # shape (n * n * nti, ni, no)
+    w_flat = tf.reshape(w, [n * n * nti, ni, no])  # shape (n * n * nti, ni, no)
 
     # Do the transformation / indexing operation.
-    transformed_w = K.gather(w_flat, flat_indices)  # shape (nto, nti, n, n, ni, no)
+    transformed_w = tf.gather(w_flat, flat_indices)  # shape (nto, nti, n, n, ni, no)
 
     # Put the axes in the right order, and collapse them to get a standard shape filter bank
-    transformed_w = K.permute_dimensions(transformed_w, [2, 3, 4, 1, 5, 0])  # shape (n, n, ni, nti, no, nto)
-    transformed_w = K.reshape(transformed_w, [n, n, ni * nti, no * nto])  # shape (n, n, ni * nti, no * nto)
+    transformed_w = tf.transpose(transformed_w, [2, 3, 4, 1, 5, 0])  # shape (n, n, ni, nti, no, nto)
+    transformed_w = tf.reshape(transformed_w, [n, n, ni * nti, no * nto])  # shape (n, n, ni * nti, no * nto)
 
     return transformed_w
