@@ -1,7 +1,7 @@
 import keras.backend as K
 from groupy.gconv.tensorflow_gconv.splitgconv2d import gconv2d_util
 from keras.engine import InputSpec
-from keras.layers.convolutional import Conv2D
+from keras.layers.convolutional import Conv2D, Conv2DTranspose
 from keras.utils import get_custom_objects
 from keras_gcnn.transform_filter import transform_filter_2d_nhwc
 
@@ -10,7 +10,7 @@ class GConv2D(Conv2D):
     def __init__(self, filters, kernel_size, h_input, h_output, strides=(1, 1), padding='valid', data_format=None,
                  dilation_rate=(1, 1), activation=None, use_bias=False, kernel_initializer='glorot_uniform',
                  bias_initializer='zeros', kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
-                 kernel_constraint=None, bias_constraint=None, **kwargs):
+                 kernel_constraint=None, bias_constraint=None, transpose=False, **kwargs):
         """
         :param filters:
         :param kernel_size:
@@ -42,6 +42,7 @@ class GConv2D(Conv2D):
 
         self.h_input = h_input
         self.h_output = h_output
+        self.transpose = transpose
 
         super(GConv2D, self).__init__(filters, kernel_size, strides=strides, padding=padding, data_format=data_format,
                                       dilation_rate=dilation_rate, activation=activation,
@@ -52,7 +53,10 @@ class GConv2D(Conv2D):
                                       bias_constraint=bias_constraint, **kwargs)
 
     def compute_output_shape(self, input_shape):
-        shape = super(GConv2D, self).compute_output_shape(input_shape)
+        if self.transpose:
+            shape = Conv2DTranspose.compute_output_shape(self, input_shape)
+        else:
+            shape = super(GConv2D, self).compute_output_shape(input_shape)
         nto = shape[3]
 
         if self.h_output == 'C4':
@@ -105,7 +109,9 @@ class GConv2D(Conv2D):
             strides=self.strides,
             padding=self.padding,
             data_format=self.data_format,
-            dilation_rate=self.dilation_rate)
+            dilation_rate=self.dilation_rate,
+            transpose=self.transpose,
+            output_shape=self.compute_output_shape(inputs._keras_shape))
 
         if self.activation is not None:
             return self.activation(outputs)
@@ -120,7 +126,7 @@ class GConv2D(Conv2D):
 
 
 def gconv2d(x, kernel, gconv_indices, gconv_shape_info, strides=(1, 1), padding='valid',
-            data_format=None, dilation_rate=(1, 1)):
+            data_format=None, dilation_rate=(1, 1), transpose=False, output_shape=None):
     """2D group equivariant convolution.
 
     # Arguments
@@ -141,6 +147,12 @@ def gconv2d(x, kernel, gconv_indices, gconv_shape_info, strides=(1, 1), padding=
     """
     # Transform the filters
     transformed_filter = transform_filter_2d_nhwc(w=kernel, flat_indices=gconv_indices, shape_info=gconv_shape_info)
+    if transpose:
+        output_shape = (K.shape(x)[0], output_shape[1], output_shape[2], output_shape[3])
+        transformed_filter = transform_filter_2d_nhwc(w=kernel, flat_indices=gconv_indices, shape_info=gconv_shape_info)
+        transformed_filter = K.permute_dimensions(transformed_filter, [0, 1, 3, 2])
+        return K.conv2d_transpose(x=x, kernel=transformed_filter, output_shape=output_shape, strides=strides,
+                                padding=padding, data_format=data_format)
     return K.conv2d(x=x, kernel=transformed_filter, strides=strides, padding=padding, data_format=data_format,
                     dilation_rate=dilation_rate)
 
