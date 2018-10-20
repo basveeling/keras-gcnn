@@ -37,13 +37,13 @@ def test_d4_d4_conv_equivariance():
 def test_c4_c4_tranposed_conv_equivariance():
     im = np.random.randn(2, 5, 5, 4)
     x, y = make_graph_transposed(5, 'C4', 'C4')
-    equivariance_check(im, x, y, P4FuncArray, P4FuncArray, C4a.C4)
+    equivariance_check(im, x, y, P4FuncArray, P4FuncArray, C4a)
 
 
 def test_d4_d4_transposed_conv_equivariance():
     im = np.random.randn(2, 5, 5, 8)
     x, y = make_graph_transposed(5, 'D4', 'D4')
-    equivariance_check(im, x, y, P4MFuncArray, P4MFuncArray, D4a.D4)
+    equivariance_check(im, x, y, P4MFuncArray, P4MFuncArray, D4a)
 
 
 def make_graph(h_input, h_output):

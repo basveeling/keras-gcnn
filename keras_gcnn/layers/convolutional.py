@@ -111,7 +111,7 @@ class GConv2D(Conv2D):
             data_format=self.data_format,
             dilation_rate=self.dilation_rate,
             transpose=self.transpose,
-            output_shape=self.compute_output_shape(inputs._keras_shape))
+            output_shape=self.compute_output_shape(inputs.shape))
 
         if self.activation is not None:
             return self.activation(outputs)
